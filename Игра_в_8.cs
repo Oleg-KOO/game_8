@@ -30,44 +30,33 @@ public class Game
     private Point GetZeroPoint()
     {
         return Rectangle.Enumer(field.GetLength(0), field.GetLength(1))
-                        .Where(a => field[a.X, a.Y] == 0)
-                        .FirstOrDefault() ?? new Point{X = -1, Y = -1};
+                        .Where(a => field[a.X, a.Y] == 0).FirstOrDefault() ?? new Point{X = -1, Y = -1};
     }
     
     public override string ToString()
     {
         if (print != "") return print;
         var size = field.GetLength(0);
-        Func<int, int, Func<Point, string>, string> str = (x, y, funk) => 
-            Rectangle.Enumer(x, y).Select(a => funk(a)).Aggregate((a, b) => a + b);
-        Func<Point, int, int[,], string> str2 = (a, i, field) => 
-            String.Format("{0, 3} |", (field[a.X, i] == 0 ? " " : field[a.X, i].ToString()));
-        
-        print += str(size * 5, 1, a => "-") + "-\n|" 
-               + str(field.GetLength(1), 1, b => str(size, 1, a => str2(a, b.X, field)) + "\n" 
-               + str(size * 5, 1, a => "-") + "-\n|");
-       
+        Func<int, int, Func<Point, string>, string> str = (x, y, funk) => Rectangle.Enumer(x, y).Select(a => funk(a)).Aggregate((a, b) => a + b);
+        Func<Point, int, int[,], string> str2 = (a, i, field) => String.Format("{0, 3} |", (field[a.X, i] == 0 ? " " : field[a.X, i].ToString()));
+        print   += str(size * 5, 1, a => "-") + "-\n|" 
+                + str(field.GetLength(1), 1, b => str(size, 1, a => str2(a, b.X, field)) + "\n" 
+                + str(size * 5, 1, a => "-") + "-\n|");
         print = print.Remove(print.Length - 1);
         return print;
     }
     
-    public override int GetHashCode()
-    {
-        return hashCode;
-    }
+    public override int GetHashCode() => hashCode;
     
     public override bool Equals(Object obj)
     {
          if (obj == null || !this.GetType().Equals(obj.GetType()) || !(obj is Game game)) return false;
-
-         return Rectangle.Enumer(field.GetLength(0), field.GetLength(1))
-                         .All(a => game.field[a.X, a.Y] == this.field[a.X, a.Y]);
+         return Rectangle.Enumer(field.GetLength(0), field.GetLength(1)).All(a => game.field[a.X, a.Y] == this.field[a.X, a.Y]);
     }
     
     public Game Move (int dx, int dy)
     {
         var x = zeroPoint.X + dx; var y = zeroPoint.Y + dy;
-        
         if (dx * dx + dy * dy != 1) return null;
         if (x >= field.GetLength(0) || x < 0 || y >= field.GetLength(1) || y < 0) return null;
         var newGame = (int[,]) field.Clone();
@@ -75,12 +64,7 @@ public class Game
         return new Game(newGame);
     }
     
-    public IEnumerable<Game> AllMove()
-    {
-        return Rectangle.Enumer(3, 3)
-                        .Select(a => Move(a.X - 1, a.Y - 1))
-                        .Where(a => a != null);
-    }
+    public IEnumerable<Game> AllMove() => Rectangle.Enumer(3, 3).Select(a => Move(a.X - 1, a.Y - 1)).Where(a => a != null);
 }
 
 class Rectangle
@@ -111,11 +95,8 @@ public class GameRezult
     {
         var watch = new Stopwatch();
         watch.Start();
-        
         var trackNew = new Dictionary<Game, Game>(); bool flag = false;
-        
-        flag = startGame.AllMove().Where(d => !trackNew.ContainsKey(d))
-                        .Any(d => {trackNew.Add(d, null); return d.Equals(targetGame);});
+        flag = startGame.AllMove().Where(d => !trackNew.ContainsKey(d)).Any(d => {trackNew.Add(d, null); return d.Equals(targetGame);});
         if (flag)
         {
             trueTrack.Add(startGame);
@@ -124,25 +105,20 @@ public class GameRezult
             time = (int)watch.ElapsedMilliseconds;
             finish = true; return;
         }
-        
         var findList = new List<GameRezult>();
-        
         foreach (var d in trackNew) 
-            {
-                var v = new GameRezult();
-                var track = new Dictionary<Game, Game>(trackNew);
-                track.Remove(d.Key);
-                Action find = () => v.FindRezult(d.Key, targetGame, track);
-                Task.Run(find);
-                findList.Add(v);
-            }
-            
+        {
+            var v = new GameRezult();
+            var track = new Dictionary<Game, Game>(trackNew);
+            track.Remove(d.Key);
+            Action find = () => v.FindRezult(d.Key, targetGame, track);
+            Task.Run(find);
+            findList.Add(v);
+        }
         bool flag2 = true; bool flag3 = false;
         while (flag2 && !flag3)
         {
-            Thread.Sleep(200);
-            flag2 = false;
-            count = 0;
+            Thread.Sleep(200); flag2 = false; count = 0;
             foreach (var g in findList)
             {
                 count += g.count;
@@ -162,9 +138,6 @@ public class GameRezult
     
     public void FindRezult(Game startGame, Game targetGame, Dictionary<Game, Game> track)
     {
-        var watch = new Stopwatch();
-        watch.Start();
-           
         var qu = new Queue<Game>(); bool flag = false;
         track.Add(startGame, null); qu.Enqueue(startGame);
         if (startGame == targetGame) flag = true;
@@ -172,12 +145,8 @@ public class GameRezult
         while (qu.Count > 0 && !flag && !finish)
         {
             var game = qu.Dequeue();
-            flag = game.AllMove().Where(d => !track.ContainsKey(d))
-                                .Any(d => {qu.Enqueue(d); track.Add(d, game); count++; return d.Equals(targetGame);});
+            flag = game.AllMove().Where(d => !track.ContainsKey(d)).Any(d => {qu.Enqueue(d); track.Add(d, game); count++; return d.Equals(targetGame);});
         }
-            
-        watch.Stop();
-        time = (int)watch.ElapsedMilliseconds;
         if (flag)
             while (targetGame != null)
             {
@@ -196,7 +165,6 @@ class GetGame
         var fieldGame = new int[sizeX, sizeY]; int k = 1;
         Rectangle.Enumer(sizeX, sizeY).All(p => {fieldGame[p.X, p.Y] = k; k++; return true;});
         fieldGame[sizeX - 1, sizeY - 1] = 0;
-        
         return new Game(fieldGame);
     }
     
